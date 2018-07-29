@@ -1,33 +1,68 @@
 name := "sbt-git-versioning"
-organizationName := "Rally Health"
-organization := "com.rallyhealth"
+organizationName in ThisBuild := "Rally Health"
+organization in ThisBuild := "com.rallyhealth"
 
-scalaVersion := "2.11.12"
+scalaVersion in ThisBuild := Dependencies.scala211Version
 
-enablePlugins(SemVerPlugin)
-semVerLimit := "1.0.999"
-licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
+semVerLimit in ThisBuild := "1.0.999"
+licenses in ThisBuild := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 
-bintrayOrganization := Some("rallyhealth")
-bintrayRepository := "ivy-scala-libs"
+bintrayOrganization in ThisBuild := Some("rallyhealth")
+bintrayRepository in ThisBuild := "ivy-scala-libs"
 
-publishMavenStyle := false
+// Disable publishing of root project
+publish := {}
+publishLocal := {}
 
-scalacOptions ++= Seq("-Xfatal-warnings", "-Xlint", "-Ywarn-unused-import")
+def commonProject(id: String, path: String): Project = {
+  Project(id, file(path))
+    .settings(
+      // disable scaladoc generation
+      sources in(Compile, doc) := Seq.empty,
+      publishArtifact in packageDoc := false,
 
-// TODO: Cross-compile play version
-libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play" % "2.5.18",
-  "com.typesafe.play" %% "play-json" % "2.5.18"
-) ++ Seq(
-  // Test-only dependencies
-  "com.rallyhealth" %% "play25-test-ops-core" % "1.0.0",
-  "org.scalatest" %% "scalatest" % "3.0.5",
-  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0"
-).map(_ % Test)
+      publishMavenStyle := false,
 
-// disable scaladoc generation
-sources in(Compile, doc) := Seq.empty
+      scalacOptions := scalacOptions.value
+        .filterNot(_ == "-deprecation") ++ Seq(
+        "-feature",
+        "-Xfatal-warnings",
+        "-Xlint",
+        "-Ywarn-unused-import",
+        "-deprecation:false"
+      )
+    )
+    .enablePlugins(SemVerPlugin)
+}
 
-publishArtifact in packageDoc := false
+def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
+  val playSuffix = includePlayVersion match {
+    case Dependencies.play25Version => "25"
+    case Dependencies.play26Version => "26"
+  }
+  val projectPath = "code"
+  commonProject(s"play$playSuffix-module-json-error-handler", s"play$playSuffix")
+    .settings(
+      crossScalaVersions := {
+        includePlayVersion match {
+          case Dependencies.play25Version => Seq(Dependencies.scala211Version)
+          case Dependencies.play26Version => Seq(Dependencies.scala211Version, Dependencies.scala212Version)
+        }
+      },
+      sourceDirectory := file(s"$projectPath/src").getAbsoluteFile,
+      (sourceDirectory in Compile) := file(s"$projectPath/src/main").getAbsoluteFile,
+      (sourceDirectory in Test) := file(s"$projectPath/src/test").getAbsoluteFile,
+      libraryDependencies ++= Seq(
+        Dependencies.play(includePlayVersion),
+        Dependencies.playJson(includePlayVersion)
+      ) ++ Seq(
+        // Test-only dependencies
+        Dependencies.playTestOps(includePlayVersion),
+        Dependencies.scalatest,
+        Dependencies.scalatestPlusPlay(includePlayVersion)
+      ).map(_ % Test)
+    )
+}
 
+lazy val play25 = playModuleJsonErrorHandler(Dependencies.play25Version)
+lazy val play26 = playModuleJsonErrorHandler(Dependencies.play26Version)
