@@ -1,23 +1,22 @@
 package com.rallyhealth.playmodule.jsonerrors
 
 import org.scalatest.AsyncFreeSpec
-import play.api.http.{DefaultHttpErrorHandler, HttpErrorConfig, HttpErrorHandlerExceptions, Status}
-import play.api.libs.json.Json
+import play.api.http._
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 import play.api.routing.Router
 import play.api.routing.Router.Routes
 import play.api.test.ops.AsyncResultExtractors
 import play.api.test.{FakeHeaders, FakeRequest}
-import play.core.SourceMapper
 
 import scala.concurrent.Future
 import scala.util.matching.Regex
 
-class JsonHttpErrorHandlingSpec extends AsyncFreeSpec with AsyncResultExtractors {
+class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtractors {
 
   class FixtureParam(val router: Router, showDevErrors: Boolean) {
-    val config: HttpErrorConfig = TestHttpErrorHandler.simpleErrorConfig.copy(showDevErrors = showDevErrors)
-    lazy val handler: TestHttpErrorHandler = new TestHttpErrorHandler(router, config)
+    val config: HttpErrorConfig = HttpErrorConfig(showDevErrors = showDevErrors, None)
+    lazy val handler: HttpErrorHandler = new PlayJsonHttpErrorHandler(router, config, None)
     val testRequest: FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest("GET", "/?test=true", FakeHeaders(Seq("test" -> "true")), AnyContentAsEmpty)
     }
@@ -34,7 +33,8 @@ class JsonHttpErrorHandlingSpec extends AsyncFreeSpec with AsyncResultExtractors
       val expectedMessage = "test exception"
       val expectedJson = Json.obj(
         "url" -> testRequest.toString(),
-        "error" -> expectedMessage
+        "error" -> PlayJsonHttpErrorHandling.CLIENT_ERROR,
+        "message" -> expectedMessage
       )
       for {
         result <- handler.onClientError(testRequest, Status.BAD_REQUEST, expectedMessage)
@@ -51,7 +51,8 @@ class JsonHttpErrorHandlingSpec extends AsyncFreeSpec with AsyncResultExtractors
       val expectedMessage = "test exception"
       val expectedJson = Json.obj(
         "url" -> testRequest.toString(),
-        "error" -> expectedMessage
+        "error" -> PlayJsonHttpErrorHandling.CLIENT_ERROR,
+        "message" -> expectedMessage
       )
       for {
         result <- handler.onClientError(testRequest, Status.FORBIDDEN, expectedMessage)
@@ -76,7 +77,8 @@ class JsonHttpErrorHandlingSpec extends AsyncFreeSpec with AsyncResultExtractors
         for (body <- maybeBody) {
           val expectedJson = Json.obj(
             "url" -> testRequest.toString(),
-            "error" -> s"Unmatched URL: $expectedMessage",
+            "error" -> PlayJsonHttpErrorHandling.CLIENT_ERROR,
+            "message" -> s"Unmatched URL: $expectedMessage",
             "routes" -> Json.obj()
           )
           assertResult(expectedJson)(body)
@@ -105,7 +107,8 @@ class JsonHttpErrorHandlingSpec extends AsyncFreeSpec with AsyncResultExtractors
           }.toMap
           val expectedJson = Json.obj(
             "url" -> testRequest.toString(),
-            "error" -> s"Unmatched URL: $expectedMessage",
+            "error" -> PlayJsonHttpErrorHandling.CLIENT_ERROR,
+            "message" -> s"Unmatched URL: $expectedMessage",
             "routes" -> expectedRouteMap
           )
           assertResult(expectedJson)(body)
@@ -114,52 +117,82 @@ class JsonHttpErrorHandlingSpec extends AsyncFreeSpec with AsyncResultExtractors
       }
     }
 
-    s"$it should return json for 500 when $showDevErrorIsSet" in {
+    s"$it should return json for 500 with the correct format when $showDevErrorIsSet" in {
       val fixture = new FixtureParam(Router.empty, whenShowDevErrors)
       import fixture._
+
+      /* Setup the following exception hierarchy:
+       *
+       * usefulException:
+       * - suppressed:
+       *   * suppressedException1
+       * - cause:
+       *   * unwrappedException
+       *     - suppressed:
+       *       * suppressedException2
+       *     - cause:
+       *       * nestedException
+       *         - suppressed: null
+       *         - cause: null
+       */
       val nestedException = new RuntimeException("test nested exception")
       val unwrappedException = new RuntimeException("test exception", nestedException)
-      val expectedException = HttpErrorHandlerExceptions
+      val suppressedException1 = new RuntimeException("test suppressed exception 1")
+      unwrappedException.addSuppressed(suppressedException1)
+      val usefulException = HttpErrorHandlerExceptions
         .throwableToUsefulException(None, !config.showDevErrors, unwrappedException)
+      val suppressedException2 = new RuntimeException("test suppressed exception 2")
+      usefulException.addSuppressed(suppressedException2)
+
       for {
-        result <- handler.onServerError(testRequest, expectedException)
+        result <- handler.onServerError(testRequest, usefulException)
         body <- contentAsJson(result)
       } yield {
         assertResult(Status.INTERNAL_SERVER_ERROR)(result.header.status)
+
+        // Test the usefulException at the root
+        val error = (body \ "error").as[String]
+        assertResult(PlayJsonHttpErrorHandling.UNCAUGHT_EXCEPTION)(error)
+        val usefulExceptionMessage = (body \ "message").as[String]
+        assertResult(usefulException.getMessage)(usefulExceptionMessage)
+        // Test that the root exception supports suppressed exceptions
+        val usefulExceptionSuppressedLength = (body \ "suppressed").toOption
+          .flatMap(_.asOpt[Seq[JsObject]]).map(_.size)
+        // There should always be a suppressed exception regardless of showDevErrors
+        assert(usefulExceptionSuppressedLength contains 1)
         val traceLength = (body \ "trace").toOption.flatMap(_.asOpt[Seq[String]]).map(_.size)
-        assert(config.showDevErrors || traceLength.isEmpty)
-        val traceCauseMessage = (body \ "traceCause" \ "message").as[String]
-        assertResult(unwrappedException.getMessage)(traceCauseMessage)
-        val traceCauseLength = (body \ "traceCause" \ "trace").toOption.flatMap(_.asOpt[Seq[String]]).map(_.size)
-        assert(config.showDevErrors || traceCauseLength.isEmpty)
-        val nestedTraceCauseMessage = (body \ "traceCause" \ "traceCause" \ "message").as[String]
-        assertResult(nestedException.getMessage)(nestedTraceCauseMessage)
-        val nestedTraceCauseLength = (body \ "traceCause" \ "traceCause" \ "trace").toOption
+        // We don't care about the trace length as long as it is absent on prod and some positive number on dev
+        assert(config.showDevErrors && traceLength.exists(_ > 0) || traceLength.isEmpty)
+
+        // Test the unwrappedException that caused the usefulException
+        val unwrappedExceptionMessage = (body \ "traceCause" \ "message").as[String]
+        assertResult(unwrappedException.getMessage)(unwrappedExceptionMessage)
+        // Test that a nested exception supports suppressed exceptions
+        val unwrappedExceptionSuppressedLength = (body \ "traceCause" \ "suppressed").toOption
+          .flatMap(_.asOpt[Seq[JsObject]]).map(_.size)
+        // There should always be a suppressed exception regardless of showDevErrors
+        assert(unwrappedExceptionSuppressedLength contains 1)
+        val unwrappedTraceLength = (body \ "traceCause" \ "trace").toOption.flatMap(_.asOpt[Seq[String]]).map(_.size)
+        // We don't care about the trace length as long as it is absent on prod and some positive number on dev
+        assert(config.showDevErrors && unwrappedTraceLength.exists(_ > 0) || unwrappedTraceLength.isEmpty)
+
+        // Test the nestedException that caused the unwrappedException
+        val nestedExceptionMessage = (body \ "traceCause" \ "traceCause" \ "message").as[String]
+        assertResult(nestedException.getMessage)(nestedExceptionMessage)
+        val nestedExceptionSuppressedLength = (body \ "traceCause" \ "traceCause" \ "suppressed").toOption
+          .flatMap(_.asOpt[Seq[JsObject]]).map(_.size)
+        // We only added a suppressed exception to the first unwrapped and nested exception, but not its cause
+        assert(nestedExceptionSuppressedLength.isEmpty)
+        val nestedExceptionTraceLength = (body \ "traceCause" \ "traceCause" \ "trace").toOption
           .flatMap(_.asOpt[Seq[String]]).map(_.size)
-        assert(config.showDevErrors || nestedTraceCauseLength.isEmpty)
-        assertResult("Uncaught Exception") {
-          (body \ "error").as[String]
-        }
-        assertResult(expectedException.getMessage) {
-          (body \ "message").as[String]
-        }
+        // We don't care about the trace length as long as it is absent on prod and some positive number on dev
+        assert(config.showDevErrors && nestedExceptionTraceLength.exists(_ > 0) || nestedExceptionTraceLength.isEmpty)
       }
     }
   }
 
   testHttpErrorHandler(true)
   testHttpErrorHandler(false)
-}
-
-class TestHttpErrorHandler(
-  override protected val router: Router,
-  override protected val config: HttpErrorConfig = TestHttpErrorHandler.simpleErrorConfig,
-  sourceMapper: Option[SourceMapper] = None
-) extends DefaultHttpErrorHandler(config, sourceMapper, Some(router))
-  with PlayJsonHttpErrorHandling
-
-object TestHttpErrorHandler {
-  val simpleErrorConfig: HttpErrorConfig = HttpErrorConfig(showDevErrors = false, None)
 }
 
 class DocumentedRouter(
