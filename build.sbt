@@ -53,10 +53,12 @@ def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
       (sourceDirectory in Compile) := file(s"$projectPath/src/main").getAbsoluteFile,
       (sourceDirectory in Test) := file(s"$projectPath/src/test").getAbsoluteFile,
       libraryDependencies ++= Seq(
+        Dependencies.guice,
         Dependencies.play(includePlayVersion),
         Dependencies.playJson(includePlayVersion)
       ) ++ Seq(
         // Test-only dependencies
+        Dependencies.playTest(includePlayVersion),
         Dependencies.playTestOps(includePlayVersion),
         Dependencies.scalatest,
         Dependencies.scalatestPlusPlay(includePlayVersion)
