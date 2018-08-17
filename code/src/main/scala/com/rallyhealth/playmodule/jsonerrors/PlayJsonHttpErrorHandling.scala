@@ -57,8 +57,6 @@ import play.api.mvc.{Codec, RequestHeader}
   *   }
   * </code>
   *
-  * TODO: How suppressed exceptions are handled?
-  *
   * @note some fields are redundant with the request headers but are included to
   *       show how the original request was or was not modified.
   */
@@ -89,7 +87,7 @@ trait PlayJsonHttpErrorHandling extends JsonHttpErrorHandling[JsValue] {
           case Status.NOT_FOUND =>
             val fullError = s"Unmatched URL${if (message.isEmpty) "" else s": $message"}"
             fields += "message" -> JsString(fullError)
-            if (config.showDevErrors) {
+            if (config.showRoutes) {
               fields += "routes" -> JsObject(router.documentation.map {
                 case (method, pathPattern, controllerMethod) =>
                   (s"$method $pathPattern", JsString(controllerMethod))
@@ -114,11 +112,14 @@ object PlayJsonHttpErrorHandling {
   final val CLIENT_ERROR = "Client Error"
   final val UNCAUGHT_EXCEPTION = "Uncaught Exception"
 
+  /**
+    * Recursively writes a [[Throwable]] with its cause, but without a stack trace.
+    */
   lazy val writesThrowableWithoutStack: OWrites[Throwable] = {
     val writer = (
       (__ \ "message").write[String] and
-      (__ \ "suppressed").lazyWriteNullable[Seq[Throwable]](Writes.seq[Throwable](writesThrowableWithoutStack)) and // recursion
-      (__ \ "traceCause").lazyWriteNullable[Throwable](writesThrowableWithoutStack) // recursion
+      (__ \ "suppressed").lazyWriteNullable[Seq[Throwable]](Writes.seq[Throwable](writesThrowableWithoutStack)) and
+      (__ \ "traceCause").lazyWriteNullable[Throwable](writesThrowableWithoutStack)
     ).tupled
     OWrites { ex =>
       writer.writes((
@@ -129,12 +130,15 @@ object PlayJsonHttpErrorHandling {
     }
   }
 
+  /**
+    * Recursively writes a [[Throwable]] with its cause and stack trace.
+    */
   lazy val writesThrowableWithStack: OWrites[Throwable] = {
     val writer = (
       (__ \ "message").write[String] and
-      (__ \ "suppressed").lazyWriteNullable[Seq[Throwable]](Writes.seq[Throwable](writesThrowableWithStack)) and // recursion
+      (__ \ "suppressed").lazyWriteNullable[Seq[Throwable]](Writes.seq[Throwable](writesThrowableWithStack)) and
       (__ \ "trace").write[Array[String]] and
-      (__ \ "traceCause").lazyWriteNullable[Throwable](writesThrowableWithStack) // recursion
+      (__ \ "traceCause").lazyWriteNullable[Throwable](writesThrowableWithStack)
     ).tupled
     OWrites { ex =>
       writer.writes((

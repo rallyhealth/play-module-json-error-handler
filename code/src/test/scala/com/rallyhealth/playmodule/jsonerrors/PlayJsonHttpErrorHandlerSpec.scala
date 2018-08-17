@@ -14,8 +14,8 @@ import scala.util.matching.Regex
 
 class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtractors {
 
-  class FixtureParam(val router: Router, showDevErrors: Boolean) {
-    val config: HttpErrorConfig = HttpErrorConfig(showDevErrors = showDevErrors, None)
+  class FixtureParam(val router: Router, showDevErrors: Boolean, showRoutes: Boolean) {
+    val config: JsonHttpErrorConfig = JsonHttpErrorConfig(showDevErrors, showRoutes, None)
     lazy val handler: HttpErrorHandler = new PlayJsonHttpErrorHandler(router, config, None)
     val testRequest: FakeRequest[AnyContentAsEmpty.type] = {
       FakeRequest("GET", "/?test=true", FakeHeaders(Seq("test" -> "true")), AnyContentAsEmpty)
@@ -24,11 +24,16 @@ class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtract
 
   private val it = classOf[PlayJsonHttpErrorHandling].getSimpleName
 
-  def testHttpErrorHandler(whenShowDevErrors: Boolean): Unit = {
+  def testHttpErrorHandler(whenShowDevErrors: Boolean, whenShowRoutes: Boolean): Unit = {
     val showDevErrorIsSet = s"showDevErrors = $whenShowDevErrors"
+    val showRoutesIsSet = s"showRoutes = $whenShowRoutes"
 
-    s"$it should return json for 400 when $showDevErrorIsSet" in {
-      val fixture = new FixtureParam(Router.empty, whenShowDevErrors)
+    def newFixture(router: Router = Router.empty): FixtureParam = {
+      new FixtureParam(Router.empty, whenShowDevErrors, whenShowRoutes)
+    }
+
+    s"$it should return json for 400 when $showDevErrorIsSet and $showRoutesIsSet" in {
+      val fixture = newFixture()
       import fixture._
       val expectedMessage = "test exception"
       val expectedJson = Json.obj(
@@ -45,8 +50,8 @@ class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtract
       }
     }
 
-    s"$it should return json for 403 when $showDevErrorIsSet" in {
-      val fixture = new FixtureParam(Router.empty, whenShowDevErrors)
+    s"$it should return json for 403 when $showDevErrorIsSet and $showRoutesIsSet" in {
+      val fixture = newFixture()
       import fixture._
       val expectedMessage = "test exception"
       val expectedJson = Json.obj(
@@ -63,14 +68,14 @@ class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtract
       }
     }
 
-    s"$it should return json for 404 when $showDevErrorIsSet" in {
-      val fixture = new FixtureParam(Router.empty, whenShowDevErrors)
+    s"$it should return json for 404 when $showDevErrorIsSet and $showRoutesIsSet" in {
+      val fixture = newFixture()
       import fixture._
       val expectedMessage = "test exception"
       for {
         result <- handler.onClientError(testRequest, Status.NOT_FOUND, expectedMessage)
         maybeBody <- {
-          if (config.showDevErrors) contentAsJson(result).map(Some(_))
+          if (config.showDevErrors && config.showRoutes) contentAsJson(result).map(Some(_))
           else Future.successful(None)
         }
       } yield {
@@ -87,17 +92,17 @@ class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtract
       }
     }
 
-    s"$it should return a list of routes for 404 when $showDevErrorIsSet" in {
-      val fixture = new FixtureParam(DocumentedRouter.fromRegexMap(
+    s"$it should return a list of routes for 404 when $showDevErrorIsSet and $showRoutesIsSet" in {
+      val fixture = newFixture(DocumentedRouter.fromRegexMap(
         ("GET", "/unmatched/1".r, "test 1 documentation") -> Action(Results.Ok),
         ("GET", "/unmatched/2".r, "test 2 documentation") -> Action(Results.Ok)
-      ), whenShowDevErrors)
+      ))
       import fixture._
       val expectedMessage = "test exception"
       for {
         result <- handler.onClientError(testRequest, Status.NOT_FOUND, expectedMessage)
         maybeBody <- {
-          if (config.showDevErrors) contentAsJson(result).map(Some(_))
+          if (config.showRoutes) contentAsJson(result).map(Some(_))
           else Future.successful(None)
         }
       } yield {
@@ -117,8 +122,8 @@ class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtract
       }
     }
 
-    s"$it should return json for 500 with the correct format when $showDevErrorIsSet" in {
-      val fixture = new FixtureParam(Router.empty, whenShowDevErrors)
+    s"$it should return json for 500 with the correct format when $showDevErrorIsSet and $showRoutesIsSet" in {
+      val fixture = newFixture()
       import fixture._
 
       /* Setup the following exception hierarchy:
@@ -191,8 +196,10 @@ class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtract
     }
   }
 
-  testHttpErrorHandler(true)
-  testHttpErrorHandler(false)
+  testHttpErrorHandler(true, true)
+  testHttpErrorHandler(true, false)
+  testHttpErrorHandler(false, true)
+  testHttpErrorHandler(false, false)
 }
 
 class DocumentedRouter(

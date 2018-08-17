@@ -2,14 +2,14 @@ import sbt._
 
 object Dependencies {
 
-  final val scala211Version = "2.11.12"
-  final val scala212Version = "2.12.6"
+  final val scala_2_11 = "2.11.12"
+  final val scala_2_12 = "2.12.6"
 
-  final val play25Version = "2.5.18"
-  final val play26Version = "2.6.16"
+  final val play_2_5 = "2.5.18"
+  final val play_2_6 = "2.6.16"
 
   private final val guiceVersion = "4.0"
-  private final val play25JsonVersion = play25Version
+  private final val play25JsonVersion = play_2_5
   private final val play26JsonVersion = "2.6.9"
   private final val playTestOpsVersion = "1.0.0"
   private final val scalatestVersion = "3.0.5"
@@ -26,8 +26,8 @@ object Dependencies {
 
   def playJson(playVersion: String): ModuleID = {
     val version = playVersion match {
-      case `play25Version` => play25JsonVersion
-      case `play26Version` => play26JsonVersion
+      case `play_2_5` => play25JsonVersion
+      case `play_2_6` => play26JsonVersion
     }
     "com.typesafe.play" %% "play-json" % version
   }
@@ -46,8 +46,8 @@ object Dependencies {
 
   def scalatestPlusPlay(playVersion: String): ModuleID = {
     val version = playVersion match {
-      case `play25Version` => scalatestPlusPlay25Version
-      case `play26Version` => scalatestPlusPlay26Version
+      case `play_2_5` => scalatestPlusPlay25Version
+      case `play_2_6` => scalatestPlusPlay26Version
     }
     "org.scalatest" %% "scalatest" % version
   }
