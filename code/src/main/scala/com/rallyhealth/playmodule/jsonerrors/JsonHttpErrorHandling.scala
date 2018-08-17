@@ -1,7 +1,7 @@
 package com.rallyhealth.playmodule.jsonerrors
 
 import play.api.UsefulException
-import play.api.http.{DefaultHttpErrorHandler, HttpErrorConfig, Status, Writeable}
+import play.api.http.{DefaultHttpErrorHandler, Status, Writeable}
 import play.api.mvc.Results._
 import play.api.mvc.{RequestHeader, Result, Results}
 import play.api.routing.Router
@@ -19,7 +19,7 @@ import scala.concurrent.Future
   */
 trait JsonHttpErrorHandling[Json] extends DefaultHttpErrorHandler {
 
-  protected def config: HttpErrorConfig
+  protected def config: JsonHttpErrorConfig
   protected def router: Router
   implicit protected def writeable: Writeable[Json]
 
@@ -68,7 +68,14 @@ trait JsonHttpErrorHandling[Json] extends DefaultHttpErrorHandler {
   }
 
   protected def onProdNotFound(request: RequestHeader, message: String): Future[Result] = {
-    Future.successful(NotFound)
+    if (config.showRoutes) {
+      val status = Status.NOT_FOUND
+      val error = Left(message)
+      val body = jsonify(request, status, error)
+      result(request, status, error, body)
+    } else {
+      Future.successful(NotFound)
+    }
   }
 
   override protected def onBadRequest(request: RequestHeader, message: String): Future[Result] = {
