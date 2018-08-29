@@ -9,8 +9,8 @@ crossScalaVersions in ThisBuild := Seq(scala_2_11, scala_2_12)
 
 licenses in ThisBuild := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 
-bintrayOrganization in ThisBuild := Some("rallyhealth")
-bintrayRepository in ThisBuild := "ivy-scala-libs"
+bintrayOrganization := Some("rallyhealth")
+bintrayRepository := "maven"
 
 // Disable publishing of root project
 publish := {}
