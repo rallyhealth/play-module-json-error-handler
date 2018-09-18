@@ -12,6 +12,8 @@ licenses in ThisBuild := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 bintrayOrganization := Some("rallyhealth")
 bintrayRepository := "maven"
 
+resolvers in ThisBuild += Resolver.bintrayRepo("jeffmay", "maven")
+
 // Disable publishing of root project
 publish := {}
 publishLocal := {}
