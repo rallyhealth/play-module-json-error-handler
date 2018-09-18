@@ -4,8 +4,8 @@ name := "play-module-json-error-handler-root"
 organizationName in ThisBuild := "Rally Health"
 organization in ThisBuild := "com.rallyhealth"
 
-scalaVersion in ThisBuild := scala_2_11
-crossScalaVersions in ThisBuild := Seq(scala_2_11, scala_2_12)
+scalaVersion in ThisBuild := Scala_2_11
+crossScalaVersions in ThisBuild := Seq(Scala_2_11, Scala_2_12)
 
 licenses in ThisBuild := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 
@@ -39,16 +39,16 @@ def commonProject(id: String, path: String): Project = {
 
 def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
   val playSuffix = includePlayVersion match {
-    case `play_2_5` => "25"
-    case `play_2_6` => "26"
+    case Play_2_5 => "25"
+    case Play_2_6 => "26"
   }
   val projectPath = "code"
   commonProject(s"play$playSuffix-module-json-error-handler", s"play$playSuffix")
     .settings(
       crossScalaVersions := {
         includePlayVersion match {
-          case `play_2_5` => Seq(scala_2_11)
-          case `play_2_6` => Seq(scala_2_11, scala_2_12)
+          case Play_2_5 => Seq(Scala_2_11)
+          case Play_2_6 => Seq(Scala_2_11, Scala_2_12)
         }
       },
       sourceDirectory := file(s"$projectPath/src").getAbsoluteFile,
@@ -68,5 +68,5 @@ def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
     )
 }
 
-lazy val play25 = playModuleJsonErrorHandler(play_2_5)
-lazy val play26 = playModuleJsonErrorHandler(play_2_6)
+lazy val play25 = playModuleJsonErrorHandler(Play_2_5)
+lazy val play26 = playModuleJsonErrorHandler(Play_2_6)
