@@ -2,14 +2,14 @@ import sbt._
 
 object Dependencies {
 
-  final val scala_2_11 = "2.11.12"
-  final val scala_2_12 = "2.12.6"
+  final val Scala_2_11 = "2.11.12"
+  final val Scala_2_12 = "2.12.6"
 
-  final val play_2_5 = "2.5.18"
-  final val play_2_6 = "2.6.16"
+  final val Play_2_5 = "2.5.18"
+  final val Play_2_6 = "2.6.16"
 
   private final val guiceVersion = "4.0"
-  private final val play25JsonVersion = play_2_5
+  private final val play25JsonVersion = Play_2_5
   private final val play26JsonVersion = "2.6.9"
   private final val playTestOpsVersion = "1.0.0"
   private final val scalatestVersion = "3.0.5"
@@ -26,8 +26,8 @@ object Dependencies {
 
   def playJson(playVersion: String): ModuleID = {
     val version = playVersion match {
-      case `play_2_5` => play25JsonVersion
-      case `play_2_6` => play26JsonVersion
+      case Play_2_5 => play25JsonVersion
+      case Play_2_6 => play26JsonVersion
     }
     "com.typesafe.play" %% "play-json" % version
   }
@@ -37,7 +37,7 @@ object Dependencies {
   }
 
   def playTestOps(playVersion: String): ModuleID = {
-    "com.rallyhealth" %% "play25-test-ops-core" % playTestOpsVersion
+    "me.jeffmay" %% "play25-test-ops-core" % playTestOpsVersion
   }
 
   val scalatest: ModuleID = {
@@ -46,8 +46,8 @@ object Dependencies {
 
   def scalatestPlusPlay(playVersion: String): ModuleID = {
     val version = playVersion match {
-      case `play_2_5` => scalatestPlusPlay25Version
-      case `play_2_6` => scalatestPlusPlay26Version
+      case Play_2_5 => scalatestPlusPlay25Version
+      case Play_2_6 => scalatestPlusPlay26Version
     }
     "org.scalatest" %% "scalatest" % version
   }
