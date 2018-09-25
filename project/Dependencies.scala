@@ -11,7 +11,7 @@ object Dependencies {
   private final val guiceVersion = "4.0"
   private final val play25JsonVersion = Play_2_5
   private final val play26JsonVersion = "2.6.9"
-  private final val playTestOpsVersion = "1.0.0"
+  private final val playTestOpsVersion = "1.1.0"
   private final val scalatestVersion = "3.0.5"
   private final val scalatestPlusPlay25Version = "2.0.0"
   private final val scalatestPlusPlay26Version = "3.0.1"
