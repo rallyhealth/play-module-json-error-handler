@@ -24,8 +24,9 @@ publishLocal := {}
   */
 val suppressNameCheckUntilNextMajorVersion = semVerCheck := {
   version.value.split('.') match {
-    case Array("0", minor, _*) if minor.toInt <= 1 =>
-    case _ =>
+    case Array("0", minor, _*) if minor.toInt < 2 =>
+    case Array("0", "2", "0", _*) =>
+    case _ => // anything > 0.2.0
       throw new IllegalStateException("Version bump! It's time to re-enable semantic version validation.")
   }
 }
@@ -36,8 +37,6 @@ def commonProject(id: String, path: String): Project = {
       // disable scaladoc generation
       sources in(Compile, doc) := Seq.empty,
       publishArtifact in packageDoc := false,
-
-      publishMavenStyle := false,
 
       scalacOptions := scalacOptions.value
         .filterNot(_ == "-deprecation") ++ Seq(
