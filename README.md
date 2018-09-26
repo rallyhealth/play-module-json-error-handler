@@ -1,27 +1,9 @@
-<a href='https://travis-ci.org/rallyhealth/play-module-json-error-handler'>
-  <img src='https://travis-ci.org/rallyhealth/play-module-json-error-handler.svg?branch=master' alt='Build Status' />
-</a>
-<a href='https://coveralls.io/rallyhealth/play-module-json-error-handler?branch=master'>
-  <img src='https://coveralls.io/repos/github/rallyhealth/play-module-json-error-handler/badge.svg?branch=master' alt='Coverage Status' />
-</a>
-<table>
-  <tr>
-    <th>play25-module-json-error-handler</th>
-    <th>play26-module-json-error-handler</th>
-  </tr>
-  <tr>
-    <td>
-      <a href='https://bintray.com/rallyhealth/ivy-scala-libs/play25-module-json-error-handler/_latestVersion'>
-        <img src='https://api.bintray.com/packages/rallyhealth/ivy-scala-libs/play25-module-json-error-handler/images/download.svg'>
-      </a>
-    </td>
-    <td>
-      <a href='https://bintray.com/rallyhealth/ivy-scala-libs/play26-module-json-error-handler/_latestVersion'>
-        <img src='https://api.bintray.com/packages/rallyhealth/ivy-scala-libs/play26-module-json-error-handler/images/download.svg'>
-      </a>
-    </td>
-  </tr>
-</table>
+[![Build Status](https://travis-ci.org/rallyhealth/play-module-json-error-handler.svg?branch=master)](https://travis-ci.org/rallyhealth/play-module-json-error-handler)
+[![codecov](https://codecov.io/gh/rallyhealth/play-module-json-error-handler/branch/master/graph/badge.svg)](https://codecov.io/gh/rallyhealth/play-module-json-error-handler)
+
+| play25-module-json-error-handler | play26-module-json-error-handler |
+| -------------------------------- | -------------------------------- |
+| [ ![Download](https://api.bintray.com/packages/rallyhealth/maven/play25-module-json-error-handler/images/download.svg) ](https://bintray.com/rallyhealth/maven/play25-module-json-error-handler/_latestVersion) | [ ![Download](https://api.bintray.com/packages/rallyhealth/maven/play26-module-json-error-handler/images/download.svg) ](https://bintray.com/rallyhealth/maven/play26-module-json-error-handler/_latestVersion) |
 
 # Summary
 
