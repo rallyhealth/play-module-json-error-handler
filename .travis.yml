@@ -10,7 +10,7 @@ branches:
   - master
 
 script:
-  - sbt clean coverage test coverageReport
+  - sbt clean coverage +test coverageReport
 after_success:
   # Upload coverage reports to codecov.io
   - bash <(curl -s https://codecov.io/bash) -t bd88aa45-97b2-451c-a040-07c24cb07376
