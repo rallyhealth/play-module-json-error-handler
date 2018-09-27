@@ -23,18 +23,15 @@ import play.api.{ApplicationLoader, BuiltInComponentsFromContext}
 import play.api.http.HttpErrorConfig
 
 class MyModuleFromContext(context: ApplicationLoader.Context) extends BuiltInComponentsFromContext(context) {
-  
-  lazy val httpErrorConfig: HttpErrorConfig = HttpErrorConfig(
-    environment.mode != Mode.Prod,
-    configuration.getOptional[String]("play.editor")
-  )
-  
+
+  lazy val httpErrorConfig: JsonHttpErrorConfig = JsonHttpErrorConfig.fromEnvironment(environment)
+
   override lazy val httpErrorHandler: HttpErrorHandler = new PlayJsonHttpErrorHandler(
     router,
     httpErrorConfig,
     sourceMapper
   )
-  
+
   // ... other required components
 }
 ```
