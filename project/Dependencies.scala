@@ -6,7 +6,7 @@ object Dependencies {
   final val Scala_2_12 = "2.12.6"
 
   final val Play_2_5 = "2.5.18"
-  final val Play_2_6 = "2.6.16"
+  final val Play_2_6 = "2.6.19"
 
   private final val guiceVersion = "4.0"
   private final val play25JsonVersion = Play_2_5
@@ -37,7 +37,11 @@ object Dependencies {
   }
 
   def playTestOps(playVersion: String): ModuleID = {
-    "me.jeffmay" %% "play25-test-ops-core" % playTestOpsVersion
+    val playSuffix = playVersion match {
+      case Play_2_5 => "25"
+      case Play_2_6 => "26"
+    }
+    "me.jeffmay" %% s"play$playSuffix-test-ops-core" % playTestOpsVersion
   }
 
   val scalatest: ModuleID = {
