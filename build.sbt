@@ -1,42 +1,30 @@
 import Dependencies._
 
 name := "play-module-json-error-handler-root"
-organizationName in ThisBuild := "Rally Health"
-organization in ThisBuild := "com.rallyhealth"
 
-scalaVersion in ThisBuild := Scala_2_11
+ThisBuild / organizationName := "Rally Health"
+ThisBuild / organization := "com.rallyhealth"
 
-licenses in ThisBuild := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
+ThisBuild / scalaVersion := Scala_2_11
 
-bintrayOrganization in ThisBuild := Some("rallyhealth")
-bintrayRepository in ThisBuild := "maven"
+ThisBuild / licenses := Seq("MIT" -> url("http://opensource.org/licenses/MIT"))
 
-resolvers in ThisBuild += Resolver.bintrayRepo("jeffmay", "maven")
+ThisBuild / bintrayOrganization := Some("rallyhealth")
+ThisBuild / bintrayRepository := "maven"
+
+ThisBuild / resolvers += Resolver.bintrayRepo("rallyhealth", "maven")
+ThisBuild / resolvers += Resolver.bintrayRepo("jeffmay", "maven")
 
 // Disable publishing of root project
 publish := {}
 publishLocal := {}
 
-/**
-  * Suppress naming check until next minor version.
-  *
-  * @note just delete this code if you get the following exception
-  */
-val suppressNameCheckUntilNextMajorVersion = semVerCheck := {
-  version.value.split('.') match {
-    case Array("0", minor, _*) if minor.toInt < 2 =>
-    case Array("0", "2", "0", _*) =>
-    case _ => // anything > 0.2.0
-      throw new IllegalStateException("Version bump! It's time to re-enable semantic version validation.")
-  }
-}
-
 def commonProject(id: String, path: String): Project = {
   Project(id, file(path))
     .settings(
       // disable scaladoc generation
-      sources in(Compile, doc) := Seq.empty,
-      publishArtifact in packageDoc := false,
+      Compile / doc / sources := Seq.empty,
+      packageDoc / publishArtifact := false,
 
       scalacOptions := scalacOptions.value
         .filterNot(_ == "-deprecation") ++ Seq(
@@ -62,12 +50,11 @@ def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
   val projectPath = "code"
   commonProject(s"play$playSuffix-module-json-error-handler", s"play$playSuffix")
     .settings(
-      suppressNameCheckUntilNextMajorVersion,
       scalaVersion := scalaVersions.head,
       crossScalaVersions := scalaVersions,
       sourceDirectory := file(s"$projectPath/src").getAbsoluteFile,
-      (sourceDirectory in Compile) := file(s"$projectPath/src/main").getAbsoluteFile,
-      (sourceDirectory in Test) := file(s"$projectPath/src/test").getAbsoluteFile,
+      Compile / sourceDirectory := file(s"$projectPath/src/main").getAbsoluteFile,
+      Test / sourceDirectory := file(s"$projectPath/src/test").getAbsoluteFile,
       libraryDependencies ++= Seq(
         Dependencies.guice,
         Dependencies.play(includePlayVersion),
