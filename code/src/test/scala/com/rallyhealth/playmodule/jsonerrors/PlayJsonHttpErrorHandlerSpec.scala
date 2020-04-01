@@ -1,6 +1,6 @@
 package com.rallyhealth.playmodule.jsonerrors
 
-import org.scalatest.AsyncFreeSpec
+import org.scalatest.freespec.AsyncFreeSpec
 import play.api.http._
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
@@ -207,6 +207,7 @@ class DocumentedRouter(
   override val documentation: Seq[(String, String, String)]
 ) extends Router {
   self =>
+  import DocumentedRouter._
 
   override def withPrefix(prefix: String): DocumentedRouter = {
     val p = if (prefix.endsWith("/")) prefix else s"$prefix/"
@@ -214,7 +215,8 @@ class DocumentedRouter(
       case path if path startsWith p => path.drop(p.length - 1)
     }
     val prefixRequestHeader: PartialFunction[RequestHeader, RequestHeader] = {
-      case r if prefixStringOp isDefinedAt r.path => r.copy(path = prefixStringOp(r.path))
+      case r if prefixStringOp isDefinedAt r.path =>
+        r.withTarget(r.target.withPath(prefixStringOp(r.path)))
     }
     val prefixedRoutes = Function.unlift(prefixRequestHeader.lift.andThen(_.flatMap(self.routes.lift)))
     val prefixedDocumentation = documentation.map {
@@ -231,6 +233,53 @@ class DocumentedRouter(
 }
 
 object DocumentedRouter {
+
+  /**
+    * This shim gives the Play 2.5 code the same methods that are available in Play 2.6 and Play 2.7
+    *
+    * If the method exists on the class at compile-time, then it will use that, however, if not, the compiler
+    * will find this implicit class and apply the appropriate adapters.
+    */
+  private implicit class NewRequestHeaderShim(val rh: RequestHeader) extends AnyVal {
+
+    /**
+      * This adds the `.target` method to [[RequestHeader]] that is available in versions of Play 2.6 and above.
+      *
+      * @note this does not return the RequestTarget class, because this class is not available in Play 2.5, but we
+      *       don't need it because the method that accepts that parameter is also not available in Play 2.5, so the
+      *       `.withTarget` method we define below as a shim doesn't need to accept it.
+      */
+    def target: RequestTargetShim = new RequestTargetShim(rh.path)
+
+    /**
+      * Takes the value returned from [[target]] (in Play 2.5) and copies the path.
+      */
+    def withTarget(target: RequestTargetShim): RequestHeader = {
+      rh.copy(path = target.path)
+    }
+  }
+
+  // This is never used. It only exists to make Play 2.6 and above code compile with the Play 2.5 shims above
+  private implicit class UnusedRequestHeaderShim(rh: RequestHeader) {
+    def copy(path: String): RequestHeader = {
+      throw new UnsupportedOperationException("UnusedRequestHeaderShim.copy should never be called")
+    }
+  }
+
+  /**
+    * This shim gives the Play 2.5 a version of RequestTarget that supports the minimal version of methods
+    * needed to be compatible with the source code for Play 2.6 and above.
+    *
+    * If the method exists on the class at compile-time, then it will use that, however, if not, the compiler
+    * will find this implicit class and apply the appropriate adapters.
+    */
+  private class RequestTargetShim(val path: String) extends AnyVal {
+
+    /**
+      * Return a new RequestTargetShim with the updated path.
+      */
+    def withPath(path: String): RequestTargetShim = new RequestTargetShim(path)
+  }
 
   def fromRegexMap(entries: ((String, Regex, String), Handler)*): DocumentedRouter = {
     val router = (header: RequestHeader) => {
