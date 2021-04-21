@@ -3,11 +3,11 @@ package com.rallyhealth.playmodule.jsonerrors.guice
 import com.google.inject.AbstractModule
 import com.google.inject.util.Modules
 import com.rallyhealth.playmodule.jsonerrors.{JsonHttpErrorConfig, PlayJsonHttpErrorHandler}
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 import play.api.http.HttpErrorHandler
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 
-class PlayJsonHttpErrorHandlerModuleSpec extends FreeSpec {
+class PlayJsonHttpErrorHandlerModuleSpec extends AnyFreeSpec {
 
   private val it = classOf[PlayJsonHttpErrorHandlerModule].getSimpleName
 

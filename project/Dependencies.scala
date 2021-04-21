@@ -3,22 +3,22 @@ import sbt._
 object Dependencies {
 
   final val Scala_2_11 = "2.11.12"
-  final val Scala_2_12 = "2.12.6"
-  final val Scala_2_13 = "2.13.1"
+  final val Scala_2_12 = "2.12.12"
+  final val Scala_2_13 = "2.13.5"
 
   final val Play_2_5 = "2.5.18"
   final val Play_2_6 = "2.6.19"
-  final val Play_2_7 = "2.7.4"
+  final val Play_2_7 = "2.7.9"
 
-  private final val guiceVersion = "4.0"
+  private final val guice4Version = "4.2.3"
   private final val play25JsonVersion = Play_2_5
   private final val play26JsonVersion = "2.6.9"
-  private final val play27JsonVersion = Play_2_7
-  private final val playTestOpsVersion = "1.3.0"
-  private final val scalatestVersion = "3.1.1"
+  private final val play27JsonVersion = "2.7.4"
+  private final val playTestOpsVersion = "1.5.0"
+  private final val scalatestVersion = "3.2.7"
 
-  val guice: ModuleID = {
-    "com.google.inject" % "guice" % guiceVersion
+  val guice4: ModuleID = {
+    "com.google.inject" % "guice" % guice4Version
   }
 
   def play(playVersion: String): ModuleID = {

@@ -1,10 +1,11 @@
 import Dependencies._
 
 name := "play-module-json-error-handler-root"
-
 ThisBuild / organizationName := "Rally Health"
 ThisBuild / organization := "com.rallyhealth"
 
+scalaVersion := Scala_2_13
+ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
 
 ThisBuild / bintrayOrganization := Some("rallyhealth")
@@ -13,12 +14,17 @@ ThisBuild / bintrayRepository := "maven"
 ThisBuild / resolvers += Resolver.bintrayRepo("rallyhealth", "maven")
 
 // Disable publishing of root project
-publish := {}
-publishLocal := {}
+publish / skip := true
+
+// don't search for previous artifact of the root project
+mimaFailOnNoPrevious := false
 
 def commonProject(id: String, path: String): Project = {
   Project(id, file(path))
     .settings(
+      // verify binary compatibility
+      mimaPreviousArtifacts := Set(organization.value %% name.value % "0.3.0"),
+
       // disable scaladoc generation
       Compile / doc / sources := Seq.empty,
       packageDoc / publishArtifact := false,
@@ -30,7 +36,6 @@ def commonProject(id: String, path: String): Project = {
         "-deprecation:false",
       )
     )
-    .enablePlugins(SemVerPlugin)
 }
 
 def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
@@ -49,11 +54,10 @@ def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
     .settings(
       scalaVersion := scalaVersions.head,
       crossScalaVersions := scalaVersions,
-      sourceDirectory := file(s"$projectPath/src").getAbsoluteFile,
       Compile / sourceDirectory := file(s"$projectPath/src/main").getAbsoluteFile,
       Test / sourceDirectory := file(s"$projectPath/src/test").getAbsoluteFile,
       libraryDependencies ++= Seq(
-        Dependencies.guice,
+        Dependencies.guice4,
         Dependencies.play(includePlayVersion),
         Dependencies.playJson(includePlayVersion)
       ) ++ Seq(
