@@ -1,8 +1,10 @@
 package com.rallyhealth.playmodule.jsonerrors
 
+import akka.util.ByteString
 import org.scalatest.freespec.AsyncFreeSpec
 import play.api.http._
 import play.api.libs.json.{JsObject, Json}
+import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import play.api.routing.Router
 import play.api.routing.Router.Routes
@@ -94,8 +96,8 @@ class PlayJsonHttpErrorHandlerSpec extends AsyncFreeSpec with AsyncResultExtract
 
     s"$it should return a list of routes for 404 when $showDevErrorIsSet and $showRoutesIsSet" in {
       val fixture = newFixture(DocumentedRouter.fromRegexMap(
-        ("GET", "/unmatched/1".r, "test 1 documentation") -> Action(Results.Ok),
-        ("GET", "/unmatched/2".r, "test 2 documentation") -> Action(Results.Ok)
+        ("GET", "/unmatched/1".r, "test 1 documentation") -> PlayAction(Results.Ok),
+        ("GET", "/unmatched/2".r, "test 2 documentation") -> PlayAction(Results.Ok)
       ))
       import fixture._
       val expectedMessage = "test exception"
@@ -293,4 +295,9 @@ object DocumentedRouter {
     }
     new DocumentedRouter(Function.unlift(router), documentation)
   }
+}
+
+// Used for source compatibility with Play 2.8 and earlier versions that used Action.apply()
+object PlayAction {
+  def apply(result: => Result): EssentialAction = EssentialAction(_ => Accumulator.done(result))
 }
