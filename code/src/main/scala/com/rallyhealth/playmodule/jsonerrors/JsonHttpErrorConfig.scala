@@ -13,6 +13,14 @@ case class JsonHttpErrorConfig(showDevErrors: Boolean, showRoutes: Boolean, play
 
 object JsonHttpErrorConfig {
 
+  // This only exists for source compatibility with Play 2.8 and older verions of Play Config
+  private implicit class ConfigSourceCompat(private val config: Configuration) extends AnyVal {
+    def getString(path: String): Option[String] = {
+      if (config.underlying.hasPath(path)) Some(config.underlying.getString(path))
+      else None
+    }
+  }
+
   def fromEnvironment(env: Environment, config: Configuration): JsonHttpErrorConfig = {
     val isDev = env.mode != Mode.Prod
     val editor = config.getString("play.editor")

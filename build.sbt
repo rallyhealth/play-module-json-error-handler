@@ -43,11 +43,13 @@ def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
     case Play_2_5 => "25"
     case Play_2_6 => "26"
     case Play_2_7 => "27"
+    case Play_2_8 => "28"
   }
   val scalaVersions = includePlayVersion match {
     case Play_2_5 => Seq(Scala_2_11)
     case Play_2_6 => Seq(Scala_2_11, Scala_2_12)
     case Play_2_7 => Seq(Scala_2_11, Scala_2_12, Scala_2_13)
+    case Play_2_8 => Seq(Scala_2_12, Scala_2_13)
   }
   val projectPath = "code"
   commonProject(s"play$playSuffix-module-json-error-handler", s"play$playSuffix")
@@ -72,3 +74,8 @@ def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
 lazy val play25 = playModuleJsonErrorHandler(Play_2_5)
 lazy val play26 = playModuleJsonErrorHandler(Play_2_6)
 lazy val play27 = playModuleJsonErrorHandler(Play_2_7)
+lazy val play28 = playModuleJsonErrorHandler(Play_2_8).settings(
+  // this artifact is new, so don't try to download older artifacts
+  mimaPreviousArtifacts := Set(),
+  mimaFailOnNoPrevious := false,
+)
