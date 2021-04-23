@@ -8,9 +8,15 @@ scalaVersion := Scala_2_13
 ThisBuild / versionScheme := Some("early-semver")
 ThisBuild / licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT"))
 
-ThisBuild / bintrayOrganization := Some("rallyhealth")
-ThisBuild / bintrayRepository := "maven"
+// reload sbt when the build files change
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
+ThisBuild / homepage := Some(url("https://github.com/rallyhealth/play-module-json-error-handler"))
+ThisBuild / developers := List(
+  Developer(id = "jeffmay", name = "Jeff May", email = "jeff.n.may@gmail.com", url = url("https://github.com/jeffmay")),
+)
+
+// TODO: Remove this after Bintray is no longer required for binary compatibility checking
 ThisBuild / resolvers += Resolver.bintrayRepo("rallyhealth", "maven")
 
 // Disable publishing of root project
@@ -23,7 +29,7 @@ def commonProject(id: String, path: String): Project = {
   Project(id, file(path))
     .settings(
       // verify binary compatibility
-      mimaPreviousArtifacts := Set(organization.value %% name.value % "0.3.0"),
+      mimaPreviousArtifacts := Set(organization.value %% name.value % "0.5.0"),
 
       // disable scaladoc generation
       Compile / doc / sources := Seq.empty,
@@ -74,8 +80,4 @@ def playModuleJsonErrorHandler(includePlayVersion: String): Project = {
 lazy val play25 = playModuleJsonErrorHandler(Play_2_5)
 lazy val play26 = playModuleJsonErrorHandler(Play_2_6)
 lazy val play27 = playModuleJsonErrorHandler(Play_2_7)
-lazy val play28 = playModuleJsonErrorHandler(Play_2_8).settings(
-  // this artifact is new, so don't try to download older artifacts
-  mimaPreviousArtifacts := Set(),
-  mimaFailOnNoPrevious := false,
-)
+lazy val play28 = playModuleJsonErrorHandler(Play_2_8)
