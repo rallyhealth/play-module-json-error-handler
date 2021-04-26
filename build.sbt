@@ -16,9 +16,6 @@ ThisBuild / developers := List(
   Developer(id = "jeffmay", name = "Jeff May", email = "jeff.n.may@gmail.com", url = url("https://github.com/jeffmay")),
 )
 
-// TODO: Remove this after Bintray is no longer required for binary compatibility checking
-ThisBuild / resolvers += Resolver.bintrayRepo("rallyhealth", "maven")
-
 // Disable publishing of root project
 publish / skip := true
 
@@ -29,7 +26,7 @@ def commonProject(id: String, path: String): Project = {
   Project(id, file(path))
     .settings(
       // verify binary compatibility
-      mimaPreviousArtifacts := Set(organization.value %% name.value % "0.5.0"),
+      mimaPreviousArtifacts := Set(organization.value %% name.value % "0.6.0"),
 
       // disable scaladoc generation
       Compile / doc / sources := Seq.empty,
